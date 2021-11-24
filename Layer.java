@@ -3,7 +3,14 @@ import java.awt.Graphics2D;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import java.awt.Color;
 
 public class Layer {
@@ -496,6 +503,180 @@ public class Layer {
     }
     Layer toReturn = new Layer(b);
     return toReturn;
+  }
+
+  public Layer reduceColor(double percent) {
+    BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
+    
+    HashMap<Integer, Integer> map = new HashMap<>();
+
+    for (var h = 0; h < b.getHeight(); h++) {
+      for (var w = 0; w < b.getWidth(); w++) {
+        var pixelInt = this.image.getRGB(w, h);
+        
+        if(map.get(pixelInt) == null){
+          map.put(pixelInt, 1);
+        }
+        else{
+          map.put(pixelInt, map.get(pixelInt) + 1);
+        }
+      }
+    }
+
+
+    //Get a list and sort
+    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
+    sorted.sort(Entry.comparingByValue());
+    
+    // int toKeep = 256;
+    int toKeep = (int)Math.floor(sorted.size() * percent);
+    List<Entry<Integer,Integer>> subList = sorted.subList(sorted.size()-toKeep, sorted.size());
+    
+    int count = subList.stream().map(i->i.getValue()).reduce((a,c)->a+c).get();
+    
+    List<Integer> colors = subList.stream().map(i->i.getKey()).collect(Collectors.toList());
+    Set<Integer> colorsHash = new LinkedHashSet<Integer>(colors);
+
+    
+     for (var h = 0; h < b.getHeight(); h++) {
+       for (var w = 0; w < b.getWidth(); w++) {
+            
+        
+        var pixelInt = this.image.getRGB(w, h);
+        
+        Color finalColor = null;
+        if (colorsHash.contains(pixelInt) )
+          finalColor = new Color(pixelInt);
+        else
+          finalColor = Color.MAGENTA;
+
+        
+
+        b.setRGB(w, h, finalColor.getRGB());
+
+      }
+    }
+
+    System.out.println("Looping over image");
+    Layer toReturn = new Layer(b);
+    return toReturn;
+  }
+
+  public Layer reduceColorNoHash(double percent) {
+    BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
+    
+    HashMap<Integer, Integer> map = new HashMap<>();
+
+    for (var h = 0; h < b.getHeight(); h++) {
+      for (var w = 0; w < b.getWidth(); w++) {
+        var pixelInt = this.image.getRGB(w, h);
+        
+        if(map.get(pixelInt) == null){
+          map.put(pixelInt, 1);
+        }
+        else{
+          map.put(pixelInt, map.get(pixelInt) + 1);
+        }
+      }
+    }
+
+
+    //Get a list and sort
+    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
+    sorted.sort(Entry.comparingByValue());
+    
+    System.out.println("There are " + sorted.size() + " colors in this image");
+    // int toKeep = 256;
+    int toKeep = (int)Math.floor(sorted.size() * percent);
+    List<Entry<Integer,Integer>> subList = sorted.subList(sorted.size()-toKeep, sorted.size());
+    System.out.println("There are " + subList.size() + " colors in the reduced image");
+    int count = subList.stream().map(i->i.getValue()).reduce((a,c)->a+c).get();
+    System.out.println("Which contains " + count + " pixels");
+    System.out.println("Which is " + count/(double)(b.getWidth() * b.getHeight()) + " of the image.");
+    List<Integer> colors = subList.stream().map(i->i.getKey()).collect(Collectors.toList());
+    
+    System.out.println("Saving image");
+
+     for (var h = 0; h < b.getHeight(); h++) {
+       for (var w = 0; w < b.getWidth(); w++) {
+            
+        
+        var pixelInt = this.image.getRGB(w, h);
+        
+        Color finalColor = null;
+        if (colors.contains(pixelInt) )
+          finalColor = new Color(pixelInt);
+        else
+          finalColor = Color.MAGENTA;
+
+        
+
+        b.setRGB(w, h, finalColor.getRGB());
+
+      }
+    }
+
+    System.out.println("Looping over image");
+    Layer toReturn = new Layer(b);
+    return toReturn;
+  }
+
+  public int reduceColorPercent(double inPercent) {
+    BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
+    
+    HashMap<Integer, Integer> map = new HashMap<>();
+
+    for (var h = 0; h < b.getHeight(); h++) {
+      for (var w = 0; w < b.getWidth(); w++) {
+        var pixelInt = this.image.getRGB(w, h);
+        
+        if(map.get(pixelInt) == null){
+          map.put(pixelInt, 1);
+        }
+        else{
+          map.put(pixelInt, map.get(pixelInt) + 1);
+        }
+      }
+    }
+
+
+    //Get a list and sort
+    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
+    sorted.sort(Entry.comparingByValue());
+    
+    int toKeep = (int)Math.floor(sorted.size() * inPercent);
+    List<Entry<Integer,Integer>> subList = sorted.subList(sorted.size()-toKeep, sorted.size());
+    int count = subList.stream().map(i->i.getValue()).reduce((a,c)->a+c).get();
+    
+
+    return count;
+
+    
+  } 
+  public int colorCount() {
+    BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
+    
+    HashMap<Integer, Integer> map = new HashMap<>();
+
+    for (var h = 0; h < b.getHeight(); h++) {
+      for (var w = 0; w < b.getWidth(); w++) {
+        var pixelInt = this.image.getRGB(w, h);
+        
+        if(map.get(pixelInt) == null){
+          map.put(pixelInt, 1);
+        }
+        else{
+          map.put(pixelInt, map.get(pixelInt) + 1);
+        }
+      }
+    }
+
+
+    //Get a list and sort
+    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
+    return sorted.size();
+
+    
   }
 
   

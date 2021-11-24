@@ -9,8 +9,36 @@ public class Main {
         new Main();
     }
 
-    public Main(){
-        
+    public Main() {
+        System.out.println("Color Reduction");
+        colorReduceReveal("horse", "png");
+        colorReduceReveal("mars-moon-phobos", "jpg");
+        colorReduceReveal("rotovirus", "jpg");
+        colorReduceReveal("square", "png");
+
+    }
+
+    private void colorReduceReveal(String filename, String extension) {
+        var start = new Processor("./in/" + filename + "." + extension);
+        var image = start.currentLayer().image;
+        int colorCount = image.reduceColorPercent(1);
+        System.out.println("There are " + colorCount + " colors in the image");
+        double percent = .0001;
+        while (percent <= 1) {
+            System.out.println();
+            System.out.println("Saving " + percent + " of the colors (" + Math.floor((percent * colorCount)) + " total)");
+            int count = start.currentLayer().image.reduceColorPercent(percent);
+            System.out.println("Preserves " + count/(double)(image.image.getWidth()*image.image.getHeight()) + " pixels.");
+            double p = percent;
+            start.addLayer(i -> i.reduceColor(p));
+             start.saveCurrentLayer("./out/color-reduced--" + filename + "-" + percent + ".png");
+             start.setCurrentLayer(0);
+            percent *= 10;
+        }
+    }
+
+    public void dithering() {
+
         System.out.println("Normal Dithering");
         dither("horse", "png");
         dither("mars-moon-phobos", "jpg");
@@ -22,58 +50,57 @@ public class Main {
         ditherF("mars-moon-phobos", "jpg");
         ditherF("rotovirus", "jpg");
         ditherF("square", "png");
-        
+
     }
 
     private void dither(String filename, String extension) {
-        //Create the dithered image
+        // Create the dithered image
         var start = new Processor("./in/" + filename + "." + extension).grayscale();
         start.addLayer(image -> image.ditherBW());
         start.saveCurrentLayer("./out/dithered-" + filename + ".png");
 
-        //Create grayscale version
+        // Create grayscale version
         start = new Processor("./in/" + filename + "." + extension).grayscale();
         start.saveCurrentLayer("./out/grayscale-" + filename + ".png");
 
-        //Compare the file sizes
+        // Compare the file sizes
         var ditherSize = new File("./out/dithered-" + filename + ".png").length();
         var grayscaleSize = new File("./out/grayscale-" + filename + ".png").length();
-        System.out.println(filename + ": " + (ditherSize/(double)grayscaleSize) + " compression ratio.");
+        System.out.println(filename + ": " + (ditherSize / (double) grayscaleSize) + " compression ratio.");
 
-        
     }
+
     private void ditherF(String filename, String extension) {
-        //Create the dithered image
+        // Create the dithered image
         var start = new Processor("./in/" + filename + "." + extension).grayscale();
         start.addLayer(image -> image.ditherBWFloyd());
         start.saveCurrentLayer("./out/ditheredF-" + filename + ".png");
 
-        //Create grayscale version
+        // Create grayscale version
         start = new Processor("./in/" + filename + "." + extension).grayscale();
         start.saveCurrentLayer("./out/grayscale-" + filename + ".png");
 
-        //Compare the file sizes
+        // Compare the file sizes
         var ditherSize = new File("./out/ditheredF-" + filename + ".png").length();
         var grayscaleSize = new File("./out/grayscale-" + filename + ".png").length();
-        System.out.println(filename + ": " + (ditherSize/(double)grayscaleSize) + " compression ratio.");
+        System.out.println(filename + ": " + (ditherSize / (double) grayscaleSize) + " compression ratio.");
 
-        
     }
 
     private static String[] fileFormats = null;
 
     public static String[] getFileFormats() {
-        if(fileFormats != null){
+        if (fileFormats != null) {
             return fileFormats;
         }
 
-        //Get the list of supported file formats
+        // Get the list of supported file formats
         var names = ImageIO.getWriterFormatNames();
 
-        //Use a set to remove endings that differ only by case
+        // Use a set to remove endings that differ only by case
         Set<String> toKeep = new HashSet<>();
-        
-        //Remove redundant file endings or ones we don't want
+
+        // Remove redundant file endings or ones we don't want
         Collection<String> ignore = Arrays.asList(new String[] { "tiff", "jpeg", "wbmp" });
         for (int i = 0; i < names.length; ++i) {
             String name = names[i].toLowerCase();
@@ -88,16 +115,14 @@ public class Main {
         return fileFormats;
     }
 
-
-    public void doCustomFormat(String filename, String ending){
+    public void doCustomFormat(String filename, String ending) {
         var start = new Processor("./in/" + filename + "." + ending);
         start.saveCurrentLayer("./out/" + filename + ".custom");
         var end = new Processor("./out/" + filename + ".custom");
-        
+
         System.out.println("Are the images the same? " + end.compareTo(start));
 
     }
-
 
     public void doListFormats() {
         System.out.println("The following are the file formats supported by your version of Java:");
