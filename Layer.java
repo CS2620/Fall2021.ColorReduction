@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -712,26 +713,23 @@ public class Layer {
   }
 
   /**
-   * Use KNN to reduce the number of colors in an image palette
+   * Use a random palette from the image's original colors to reduce the number of
+   * colors in an image
    * 
    * @param count The number of colors to have in the palette
    * @return A new layer with colors reduced to the given amount
    */
-  public Layer reduceColorByKNN(int count) {
+  public Layer reduceColorRandomly(int count) {
+    Random rand = new Random(0);
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
 
     List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
 
-    int toKeep = count;
-    if (toKeep == 65536)
-      System.out.println("Bug");
-    // List<Entry<Integer, Integer>> subList = sorted.subList(sorted.size() -
-    // toKeep, sorted.size());
     var colors = sorted.stream().map(i -> i.getKey()).collect(Collectors.toList());
 
     List<Integer> palette = new ArrayList<Integer>();
     while (palette.size() < count) {
-      var candidateColor = colors.get((int) Math.floor(Math.random() * colors.size()));
+      var candidateColor = colors.get((int) Math.floor(rand.nextDouble() * sorted.size()));
       if (palette.contains(candidateColor))
         continue;
       // If we get here, we have a unique color
@@ -755,7 +753,120 @@ public class Layer {
           }
         }
 
-        
+        b.setRGB(w, h, closestColor);
+
+      }
+    }
+
+    return new Layer(b);
+  }
+
+  Random rand;
+  public int getRandomColorFromColors(List<Integer> colors){
+    var candidateColor = colors.get((int) Math.floor(rand.nextDouble() * colors.size()));
+    return candidateColor;
+  }
+
+  public int closestPaletteIndex(int pixelInt, int[] palette){
+    int closestColorIndex = -1;
+    int closestDistance = Integer.MAX_VALUE;
+
+    for(var i = 0; i < palette.length; i++){
+     var paletteColor = palette[i];
+      var distance = colorDistance(pixelInt, paletteColor);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestColorIndex = i;
+      }
+    }
+    return closestColorIndex;
+  }
+
+  /**
+   * Use KNN to reduce the number of colors in an image palette
+   * 
+   * @param count The number of colors to have in the palette
+   * @return A new layer with colors reduced to the given amount
+   */
+  public Layer reduceColorByKNN(int count) {
+    rand = new Random(0);
+    BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
+
+    List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
+
+    var colors = sorted.stream().map(i -> i.getKey()).collect(Collectors.toList());
+
+    int[] palette = new int[count];
+    int index = 0;
+    while (index < count) {
+      var candidateColor = getRandomColorFromColors(colors);
+      if (Arrays.stream(palette).anyMatch(i->i==candidateColor))
+        continue;
+      // If we get here, we have a unique color
+      palette[index++] = candidateColor;
+    }
+
+    List<Entry<Integer, Integer>>[] matches = new ArrayList[palette.length]; //
+    //Arrays.fill(matches, ArrayList<Entry<Integer,Integer>>::new);
+    for(var i = 0; i < matches.length; i++){
+      matches[i] = new ArrayList<Entry<Integer, Integer>>();
+    }
+    for (var entry : sorted) {
+      var pixelInt = entry.getKey();
+      var closestIndex = closestPaletteIndex(pixelInt, palette);
+      matches[closestIndex].add(entry);
+    }
+
+    //Move every palette color to its mean
+    for(var i = 0; i < palette.length; i++){
+      if(matches[i].size() == 0){
+        //Get a new random color
+        palette[i] = getRandomColorFromColors(colors);
+        continue;
+      }
+      // Find the mean of the matches
+      int red = 0; 
+      int green = 0;
+      int blue = 0;
+      int counts = 0;
+      for(var entry : matches[i]){
+        Color color = new Color(entry.getKey());
+        red += color.getRed() * entry.getValue();
+        green += color.getGreen() * entry.getValue();
+        blue += color.getBlue() * entry.getValue();
+        counts += entry.getValue();
+      }
+      red /= counts;
+      green /= counts;
+      blue /= counts;
+
+      red = (int)Math.floor(red);
+      green = (int)Math.floor(green);
+      blue = (int)Math.floor(blue);
+
+      //Find the closest color in the matches to this mean
+      int[] colorsInMatch = matches[i].stream().map(j->j.getKey()).mapToInt(Integer::intValue).toArray();
+      Color newColor = new Color(red, green, blue);
+      int newIndex = closestPaletteIndex(newColor.getRGB(), colorsInMatch);
+      palette[i] = colorsInMatch[newIndex];
+    }
+
+    // Now remap every color to its closest palette color
+
+    for (var h = 0; h < b.getHeight(); h++) {
+      for (var w = 0; w < b.getWidth(); w++) {
+
+        var pixelInt = this.image.getRGB(w, h);
+        int closestColor = -1;
+        int closestDistance = Integer.MAX_VALUE;
+
+        for (var paletteColor : palette) {
+          var distance = colorDistance(pixelInt, paletteColor);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestColor = paletteColor;
+          }
+        }
 
         b.setRGB(w, h, closestColor);
 
