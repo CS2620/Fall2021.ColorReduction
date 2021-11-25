@@ -457,20 +457,18 @@ public class Layer {
 
   public Layer ditherBW() {
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
-    
+
     for (var h = 0; h < b.getHeight(); h++) {
       for (var w = 0; w < b.getWidth(); w++) {
         // Assume we are in grayscale
         var pixelInt = this.image.getRGB(w, h);
         int value = new Color(pixelInt).getRed();
-        
+
         Color finalColor = null;
         if (value > 128)
           finalColor = Color.WHITE;
         else
           finalColor = Color.BLACK;
-
-        
 
         b.setRGB(w, h, finalColor.getRGB());
 
@@ -482,21 +480,19 @@ public class Layer {
 
   public Layer ditherBWFloyd() {
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
-    
+
     for (var h = 0; h < b.getHeight(); h++) {
       for (var w = 0; w < b.getWidth(); w++) {
         // Assume we are in grayscale
         var pixelInt = this.image.getRGB(w, h);
         int value = new Color(pixelInt).getRed();
-        
+
         Color finalColor = null;
         if (value > 128)
           finalColor = Color.WHITE;
         else
           finalColor = Color.BLACK;
 
-        
-
         b.setRGB(w, h, finalColor.getRGB());
 
       }
@@ -505,111 +501,121 @@ public class Layer {
     return toReturn;
   }
 
-  public Layer reduceColor(double percent) {
+  /**
+   * Produce an image that only contains the <i>percent</i> most common colors
+   * 
+   * @param percent The percent [0,1] of the most common colors to preserve
+   * @return A new layer where the most common colors are preserved and the rest
+   *         are magenta
+   */
+  public Layer reduceColorPercent(double percent) {
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
+
     
-    HashMap<Integer, Integer> map = new HashMap<>();
-
-    for (var h = 0; h < b.getHeight(); h++) {
-      for (var w = 0; w < b.getWidth(); w++) {
-        var pixelInt = this.image.getRGB(w, h);
-        
-        if(map.get(pixelInt) == null){
-          map.put(pixelInt, 1);
-        }
-        else{
-          map.put(pixelInt, map.get(pixelInt) + 1);
-        }
-      }
-    }
-
-
-    //Get a list and sort
-    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
-    sorted.sort(Entry.comparingByValue());
-    
+    List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
     // int toKeep = 256;
-    int toKeep = (int)Math.floor(sorted.size() * percent);
-    List<Entry<Integer,Integer>> subList = sorted.subList(sorted.size()-toKeep, sorted.size());
-    
-    int count = subList.stream().map(i->i.getValue()).reduce((a,c)->a+c).get();
-    
-    List<Integer> colors = subList.stream().map(i->i.getKey()).collect(Collectors.toList());
+    int toKeep = (int) Math.floor(sorted.size() * percent);
+    List<Entry<Integer, Integer>> subList = sorted.subList(sorted.size() - toKeep, sorted.size());
+
+    List<Integer> colors = subList.stream().map(i -> i.getKey()).collect(Collectors.toList());
     Set<Integer> colorsHash = new LinkedHashSet<Integer>(colors);
 
-    
-     for (var h = 0; h < b.getHeight(); h++) {
-       for (var w = 0; w < b.getWidth(); w++) {
-            
-        
+    for (var h = 0; h < b.getHeight(); h++) {
+      for (var w = 0; w < b.getWidth(); w++) {
+
         var pixelInt = this.image.getRGB(w, h);
-        
+
         Color finalColor = null;
-        if (colorsHash.contains(pixelInt) )
+        if (colorsHash.contains(pixelInt))
           finalColor = new Color(pixelInt);
         else
           finalColor = Color.MAGENTA;
-
-        
 
         b.setRGB(w, h, finalColor.getRGB());
 
       }
     }
 
-    System.out.println("Looping over image");
+    // System.out.println("Looping over image");
     Layer toReturn = new Layer(b);
     return toReturn;
   }
 
+  /**
+   * Produce an image that only contains the count most common colors
+   * 
+   * @param count The number of the most common colors to preserve
+   * @return A new layer where the most common colors are preserved and the rest
+   *         are magenta
+   */
+  public Layer reduceColorByCount(int count) {
+    BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
+
+    
+    List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
+    // int toKeep = 256;
+    List<Entry<Integer, Integer>> subList = sorted.subList(sorted.size() - count, sorted.size());
+
+    List<Integer> colors = subList.stream().map(i -> i.getKey()).collect(Collectors.toList());
+    Set<Integer> colorsHash = new LinkedHashSet<Integer>(colors);
+
+    for (var h = 0; h < b.getHeight(); h++) {
+      for (var w = 0; w < b.getWidth(); w++) {
+
+        var pixelInt = this.image.getRGB(w, h);
+
+        Color finalColor = null;
+        if (colorsHash.contains(pixelInt))
+          finalColor = new Color(pixelInt);
+        else
+          finalColor = Color.MAGENTA;
+
+        b.setRGB(w, h, finalColor.getRGB());
+
+      }
+    }
+
+    // System.out.println("Looping over image");
+    Layer toReturn = new Layer(b);
+    return toReturn;
+  }
+
+  /**
+   * Given a percent of the most common colors to preseve, create a new layer with only those pixels preserved.
+   * @param percent The percent of the most common colors to preserve
+   * @return An image with the most common colors preserved and the others turned to magenta. Note that this version is backed by an arraylist, so it runs very slow.
+   */
   public Layer reduceColorNoHash(double percent) {
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
-    
-    HashMap<Integer, Integer> map = new HashMap<>();
+
+    HashMap<Integer, Integer> map = getColorCountMap();
+
+    // Get a list and sort
+    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
+    sorted.sort(Entry.comparingByValue());
+
+    System.out.println("There are " + sorted.size() + " colors in this image");
+    // int toKeep = 256;
+    int toKeep = (int) Math.floor(sorted.size() * percent);
+    List<Entry<Integer, Integer>> subList = sorted.subList(sorted.size() - toKeep, sorted.size());
+    System.out.println("There are " + subList.size() + " colors in the reduced image");
+    int count = subList.stream().map(i -> i.getValue()).reduce((a, c) -> a + c).get();
+    System.out.println("Which contains " + count + " pixels");
+    System.out.println("Which is " + count / (double) (b.getWidth() * b.getHeight()) + " of the image.");
+    List<Integer> colors = subList.stream().map(i -> i.getKey()).collect(Collectors.toList());
+
+    System.out.println("Saving image");
 
     for (var h = 0; h < b.getHeight(); h++) {
       for (var w = 0; w < b.getWidth(); w++) {
+
         var pixelInt = this.image.getRGB(w, h);
-        
-        if(map.get(pixelInt) == null){
-          map.put(pixelInt, 1);
-        }
-        else{
-          map.put(pixelInt, map.get(pixelInt) + 1);
-        }
-      }
-    }
 
-
-    //Get a list and sort
-    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
-    sorted.sort(Entry.comparingByValue());
-    
-    System.out.println("There are " + sorted.size() + " colors in this image");
-    // int toKeep = 256;
-    int toKeep = (int)Math.floor(sorted.size() * percent);
-    List<Entry<Integer,Integer>> subList = sorted.subList(sorted.size()-toKeep, sorted.size());
-    System.out.println("There are " + subList.size() + " colors in the reduced image");
-    int count = subList.stream().map(i->i.getValue()).reduce((a,c)->a+c).get();
-    System.out.println("Which contains " + count + " pixels");
-    System.out.println("Which is " + count/(double)(b.getWidth() * b.getHeight()) + " of the image.");
-    List<Integer> colors = subList.stream().map(i->i.getKey()).collect(Collectors.toList());
-    
-    System.out.println("Saving image");
-
-     for (var h = 0; h < b.getHeight(); h++) {
-       for (var w = 0; w < b.getWidth(); w++) {
-            
-        
-        var pixelInt = this.image.getRGB(w, h);
-        
         Color finalColor = null;
-        if (colors.contains(pixelInt) )
+        if (colors.contains(pixelInt))
           finalColor = new Color(pixelInt);
         else
           finalColor = Color.MAGENTA;
-
-        
 
         b.setRGB(w, h, finalColor.getRGB());
 
@@ -621,64 +627,81 @@ public class Layer {
     return toReturn;
   }
 
-  public int reduceColorPercent(double inPercent) {
-    BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
+  /**
+   * Given the <i>inPercent</i> most common colors in the image, return the number of pixels they cover.
+   * @param inPercent The percent of the most common colors to preserve
+   * @return The number of pixels covered by the most common colors
+   */
+  public int getPixelCountFromColorPercent(double inPercent) {
     
-    HashMap<Integer, Integer> map = new HashMap<>();
-
-    for (var h = 0; h < b.getHeight(); h++) {
-      for (var w = 0; w < b.getWidth(); w++) {
-        var pixelInt = this.image.getRGB(w, h);
-        
-        if(map.get(pixelInt) == null){
-          map.put(pixelInt, 1);
-        }
-        else{
-          map.put(pixelInt, map.get(pixelInt) + 1);
-        }
-      }
-    }
-
-
-    //Get a list and sort
-    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
-    sorted.sort(Entry.comparingByValue());
     
-    int toKeep = (int)Math.floor(sorted.size() * inPercent);
-    List<Entry<Integer,Integer>> subList = sorted.subList(sorted.size()-toKeep, sorted.size());
-    int count = subList.stream().map(i->i.getValue()).reduce((a,c)->a+c).get();
-    
+    List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
+
+    int toKeep = (int) Math.floor(sorted.size() * inPercent);
+    List<Entry<Integer, Integer>> subList = sorted.subList(sorted.size() - toKeep, sorted.size());
+    int count = subList.stream().map(i -> i.getValue()).reduce((a, c) -> a + c).get();
 
     return count;
+  }
 
+  /**
+   * Given the count most common colors in the image, return the number of pixels they cover.
+   * @param count The number of the most common colors to preserve
+   * @return The number of pixels covered by the most common colors
+   */
+  public int getPixelCountFromColorCount(int _count) {
     
-  } 
+    
+    List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
+
+    int toKeep = _count;
+    if(toKeep == 65536)
+      System.out.println("Bug");
+    List<Entry<Integer, Integer>> subList = sorted.subList(sorted.size() - toKeep, sorted.size());
+    int count = subList.stream().map(i -> i.getValue()).reduce((a, c) -> a + c).get();
+
+    return count;
+  }
+
+  /**
+   * Get the total number of colors in the layer
+   */
   public int colorCount() {
-    BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
-    
+    return getColorCountMap().entrySet().size();
+  }
+
+  /**
+   * Get a map of each color (as an integer) with its count in the image
+   * @return
+   */
+  public HashMap<Integer, Integer> getColorCountMap() {
     HashMap<Integer, Integer> map = new HashMap<>();
 
-    for (var h = 0; h < b.getHeight(); h++) {
-      for (var w = 0; w < b.getWidth(); w++) {
+    for (var h = 0; h < image.getHeight(); h++) {
+      for (var w = 0; w < image.getWidth(); w++) {
         var pixelInt = this.image.getRGB(w, h);
-        
-        if(map.get(pixelInt) == null){
+
+        if (map.get(pixelInt) == null) {
           map.put(pixelInt, 1);
-        }
-        else{
+        } else {
           map.put(pixelInt, map.get(pixelInt) + 1);
         }
       }
     }
 
-
-    //Get a list and sort
-    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
-    return sorted.size();
-
-    
+    return map;
   }
 
-  
+  /**
+   * Get a sorted map of colors from the image
+   * @return A sorted list of pixel,count pairs, from fewest to greatest
+   */
+  public List<Entry<Integer,Integer>> getSortedColorCountMap(){
+    HashMap<Integer, Integer> map = getColorCountMap();
 
+    // Get a list and sort
+    List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
+    sorted.sort(Entry.comparingByValue());
+    return sorted;
+  }
 }

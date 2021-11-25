@@ -19,21 +19,29 @@ public class Main {
     }
 
     private void colorReduceReveal(String filename, String extension) {
+        System.out.println();
+        System.out.println("----------------");
+        System.out.println("Reducing colors in file: " + filename);
+        
         var start = new Processor("./in/" + filename + "." + extension);
         var image = start.currentLayer().image;
-        int colorCount = image.reduceColorPercent(1);
+        int colorCount = image.colorCount();
         System.out.println("There are " + colorCount + " colors in the image");
-        double percent = .0001;
-        while (percent <= 1) {
+        
+        int currentColors = 1;
+        while (currentColors < colorCount) {
             System.out.println();
-            System.out.println("Saving " + percent + " of the colors (" + Math.floor((percent * colorCount)) + " total)");
-            int count = start.currentLayer().image.reduceColorPercent(percent);
-            System.out.println("Preserves " + count/(double)(image.image.getWidth()*image.image.getHeight()) + " pixels.");
-            double p = percent;
-            start.addLayer(i -> i.reduceColor(p));
-             start.saveCurrentLayer("./out/color-reduced--" + filename + "-" + percent + ".png");
-             start.setCurrentLayer(0);
-            percent *= 10;
+            System.out.println("Saving " + currentColors + "/" + colorCount + " of the colors.");
+            
+            int count = start.currentLayer().image.getPixelCountFromColorCount(currentColors);
+            System.out.println(
+                    "Preserves " + count / (double) (image.image.getWidth() * image.image.getHeight()) + " pixels.");
+            int cc = currentColors;
+            start.addLayer(i -> i.reduceColorByCount(cc));
+            start.saveCurrentLayer("./out/color-reduced--" + filename + "-" + currentColors + ".png");
+            start.setCurrentLayer(0);
+            currentColors *=16;
+            // currentColors = Math.min(colorCount, currentColors);
         }
     }
 
