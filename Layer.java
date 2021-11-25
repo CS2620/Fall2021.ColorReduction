@@ -511,7 +511,6 @@ public class Layer {
   public Layer reduceColorPercent(double percent) {
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
 
-    
     List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
     // int toKeep = 256;
     int toKeep = (int) Math.floor(sorted.size() * percent);
@@ -551,7 +550,6 @@ public class Layer {
   public Layer reduceColorByCount(int count) {
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
 
-    
     List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
     // int toKeep = 256;
     List<Entry<Integer, Integer>> subList = sorted.subList(sorted.size() - count, sorted.size());
@@ -581,9 +579,13 @@ public class Layer {
   }
 
   /**
-   * Given a percent of the most common colors to preseve, create a new layer with only those pixels preserved.
+   * Given a percent of the most common colors to preseve, create a new layer with
+   * only those pixels preserved.
+   * 
    * @param percent The percent of the most common colors to preserve
-   * @return An image with the most common colors preserved and the others turned to magenta. Note that this version is backed by an arraylist, so it runs very slow.
+   * @return An image with the most common colors preserved and the others turned
+   *         to magenta. Note that this version is backed by an arraylist, so it
+   *         runs very slow.
    */
   public Layer reduceColorNoHash(double percent) {
     BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
@@ -628,13 +630,14 @@ public class Layer {
   }
 
   /**
-   * Given the <i>inPercent</i> most common colors in the image, return the number of pixels they cover.
+   * Given the <i>inPercent</i> most common colors in the image, return the number
+   * of pixels they cover.
+   * 
    * @param inPercent The percent of the most common colors to preserve
    * @return The number of pixels covered by the most common colors
    */
   public int getPixelCountFromColorPercent(double inPercent) {
-    
-    
+
     List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
 
     int toKeep = (int) Math.floor(sorted.size() * inPercent);
@@ -645,17 +648,18 @@ public class Layer {
   }
 
   /**
-   * Given the count most common colors in the image, return the number of pixels they cover.
+   * Given the count most common colors in the image, return the number of pixels
+   * they cover.
+   * 
    * @param count The number of the most common colors to preserve
    * @return The number of pixels covered by the most common colors
    */
   public int getPixelCountFromColorCount(int _count) {
-    
-    
+
     List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
 
     int toKeep = _count;
-    if(toKeep == 65536)
+    if (toKeep == 65536)
       System.out.println("Bug");
     List<Entry<Integer, Integer>> subList = sorted.subList(sorted.size() - toKeep, sorted.size());
     int count = subList.stream().map(i -> i.getValue()).reduce((a, c) -> a + c).get();
@@ -672,6 +676,7 @@ public class Layer {
 
   /**
    * Get a map of each color (as an integer) with its count in the image
+   * 
    * @return
    */
   public HashMap<Integer, Integer> getColorCountMap() {
@@ -694,14 +699,79 @@ public class Layer {
 
   /**
    * Get a sorted map of colors from the image
+   * 
    * @return A sorted list of pixel,count pairs, from fewest to greatest
    */
-  public List<Entry<Integer,Integer>> getSortedColorCountMap(){
+  public List<Entry<Integer, Integer>> getSortedColorCountMap() {
     HashMap<Integer, Integer> map = getColorCountMap();
 
     // Get a list and sort
     List<Entry<Integer, Integer>> sorted = new ArrayList<>(map.entrySet());
     sorted.sort(Entry.comparingByValue());
     return sorted;
+  }
+
+  /**
+   * Use KNN to reduce the number of colors in an image palette
+   * 
+   * @param count The number of colors to have in the palette
+   * @return A new layer with colors reduced to the given amount
+   */
+  public Layer reduceColorByKNN(int count) {
+    BufferedImage b = new BufferedImage(this.image.getWidth(), this.image.getHeight(), this.image.getType());
+
+    List<Entry<Integer, Integer>> sorted = getSortedColorCountMap();
+
+    int toKeep = count;
+    if (toKeep == 65536)
+      System.out.println("Bug");
+    // List<Entry<Integer, Integer>> subList = sorted.subList(sorted.size() -
+    // toKeep, sorted.size());
+    var colors = sorted.stream().map(i -> i.getKey()).collect(Collectors.toList());
+
+    List<Integer> palette = new ArrayList<Integer>();
+    while (palette.size() < count) {
+      var candidateColor = colors.get((int) Math.floor(Math.random() * colors.size()));
+      if (palette.contains(candidateColor))
+        continue;
+      // If we get here, we have a unique color
+      palette.add(candidateColor);
+    }
+
+    // Now remap every color to its closest palette color
+
+    for (var h = 0; h < b.getHeight(); h++) {
+      for (var w = 0; w < b.getWidth(); w++) {
+
+        var pixelInt = this.image.getRGB(w, h);
+        int closestColor = -1;
+        int closestDistance = Integer.MAX_VALUE;
+
+        for (var paletteColor : palette) {
+          var distance = colorDistance(pixelInt, paletteColor);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestColor = paletteColor;
+          }
+        }
+
+        
+
+        b.setRGB(w, h, closestColor);
+
+      }
+    }
+
+    return new Layer(b);
+  }
+
+  private int colorDistance(int color1, int color2) {
+    var Color1 = new Color(color1);
+    var Color2 = new Color(color2);
+
+    var distance = Math.abs(Color1.getRed() - Color2.getRed()) + Math.abs(Color1.getGreen() - Color2.getGreen())
+        + Math.abs(Color1.getBlue() - Color2.getBlue());
+
+    return distance;
   }
 }

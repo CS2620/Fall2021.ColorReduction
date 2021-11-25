@@ -10,18 +10,56 @@ public class Main {
     }
 
     public Main() {
+        colorReduce();
+    }
+
+    public void colorReduce(){
         System.out.println("Color Reduction");
+        colorReduce("horse", "png");
+        // colorReduceReveal("mars-moon-phobos", "jpg");
+        // colorReduceReveal("rotovirus", "jpg");
+        // colorReduceReveal("square", "png");
+    }
+
+    private void colorReduce(String filename, String extension) {
+        System.out.println();
+        System.out.println("----------------");
+        System.out.println("Reducing colors in file: " + filename);
+        
+        var start = new Processor("./in/" + filename + "." + extension);
+        var image = start.currentLayer().image;
+        int colorCount = image.colorCount();
+        System.out.println("There are " + colorCount + " colors in the image");
+        
+        int currentColors = 1;
+        while (currentColors < colorCount && currentColors < 17) {
+            System.out.println();
+            System.out.println("Saving " + currentColors + "/" + colorCount + " of the colors.");
+            
+            int count = start.currentLayer().image.getPixelCountFromColorCount(currentColors);
+            System.out.println(
+                    "Preserves " + count / (double) (image.image.getWidth() * image.image.getHeight()) + " pixels.");
+            int cc = currentColors;
+            start.addLayer(i -> i.reduceColorByKNN(cc));
+            start.saveCurrentLayer("./out/color-reduced" + filename + "-" + currentColors + ".png");
+            start.setCurrentLayer(0);
+            currentColors *=16;
+            // currentColors = Math.min(colorCount, currentColors);
+        }
+    }
+
+    public void colorReduceReveal(){
+        System.out.println("Color Reduction/Reveal");
         colorReduceReveal("horse", "png");
         colorReduceReveal("mars-moon-phobos", "jpg");
         colorReduceReveal("rotovirus", "jpg");
         colorReduceReveal("square", "png");
-
     }
 
     private void colorReduceReveal(String filename, String extension) {
         System.out.println();
         System.out.println("----------------");
-        System.out.println("Reducing colors in file: " + filename);
+        System.out.println("Reducing/Revealing colors in file: " + filename);
         
         var start = new Processor("./in/" + filename + "." + extension);
         var image = start.currentLayer().image;
@@ -38,7 +76,7 @@ public class Main {
                     "Preserves " + count / (double) (image.image.getWidth() * image.image.getHeight()) + " pixels.");
             int cc = currentColors;
             start.addLayer(i -> i.reduceColorByCount(cc));
-            start.saveCurrentLayer("./out/color-reduced--" + filename + "-" + currentColors + ".png");
+            start.saveCurrentLayer("./out/color-reduced-reveal-" + filename + "-" + currentColors + ".png");
             start.setCurrentLayer(0);
             currentColors *=16;
             // currentColors = Math.min(colorCount, currentColors);
