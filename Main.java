@@ -10,6 +10,7 @@ public class Main {
     }
 
     public Main() {
+        //colorReduceReveal();
         colorReduceRandom();
         colorReduce();
     }
@@ -30,6 +31,7 @@ public class Main {
         // colorReduce("square", "png");
     }
 
+    //Do a color reduction using KNN
     private void colorReduce(String filename, String extension) {
         System.out.println();
         System.out.println("----------------");
@@ -57,10 +59,11 @@ public class Main {
         }
     }
 
+    //Do a color reduction algorithm where we randomly pick the palette colors
     private void colorReduceRandom(String filename, String extension) {
         System.out.println();
         System.out.println("----------------");
-        System.out.println("Reducing colors in file: " + filename);
+        System.out.println("(Randomly) Reducing colors in file: " + filename);
 
         var start = new Processor("./in/" + filename + "." + extension);
         var image = start.currentLayer().image;
@@ -70,7 +73,7 @@ public class Main {
         int currentColors = 1;
         while (currentColors < colorCount && currentColors <= 256) {
             System.out.println();
-            System.out.println("Saving " + currentColors + "/" + colorCount + " of the colors.");
+            System.out.println("Saving (Random Reduction) " + currentColors + "/" + colorCount + " of the colors.");
 
             int count = start.currentLayer().image.getPixelCountFromColorCount(currentColors);
             System.out.println(
@@ -105,7 +108,7 @@ public class Main {
         int currentColors = 1;
         while (currentColors < colorCount) {
             System.out.println();
-            System.out.println("Saving " + currentColors + "/" + colorCount + " of the colors.");
+            System.out.println("Saving (Reduce Reveal)" + currentColors + "/" + colorCount + " of the colors.");
 
             int count = start.currentLayer().image.getPixelCountFromColorCount(currentColors);
             System.out.println(
