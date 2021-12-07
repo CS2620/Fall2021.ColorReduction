@@ -1,5 +1,4 @@
 import java.awt.image.BufferedImage;
-import java.awt.image.ImageObserver;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
@@ -9,7 +8,6 @@ import java.awt.Color;
 
 import javax.imageio.ImageIO;
 
-import org.w3c.dom.html.HTMLAnchorElement;
 
 import java.awt.Graphics2D;
 
@@ -220,7 +218,6 @@ public class Processor {
 
   public Processor(BufferedImage bi) {
     addLayer(new ImageLayer(new Layer(bi)));
-    // layers.add(new ImageLayer(new Image(bi)));
     inferCanvasSize(bi);
   }
 
@@ -417,7 +414,7 @@ public class Processor {
     Graphics2D g = (Graphics2D) merged.getGraphics();
 
     for (int layerNum : is) {
-      g.drawImage(getLayer(layerNum).image().image, 0, 0, null);
+      g.drawImage(getLayer(layerNum).image().image, (int)getLayer(layerNum).dx, (int)getLayer(layerNum).dy, null);
     }
 
     g.dispose();
@@ -508,6 +505,14 @@ public class Processor {
     var otherImage = other.currentLayer().image();
     var toReturn = thisImage.compareTo(otherImage);
     return toReturn;
+  }
+
+  public Processor addLayer(String string) {
+    //Load the file give by the string and add it to our canvas
+    var toAdd = new Layer(string);
+    this.addLayer(toAdd);
+    return this;
+
   }
 
 }

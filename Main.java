@@ -11,24 +11,52 @@ public class Main {
 
     public Main() {
         //colorReduceReveal();
-        colorReduceRandom();
-        colorReduce();
+        //colorReduceRandom();
+        //colorReduce();
+        combineImage();
+        
+    }
+
+    private void combineImage() {
+        //Create image pairs that we are intersted in
+        var names = new String[]{"horse", "mars-moon-phobos", "rotovirus", "square"};
+        var sizes = new String[]{"1", "2", "4", "8", "16", "32", "64", "128", "256"};
+        var variations = new String[]{"color-reduced-", "color-reduced-random-"};
+        for(var name : names){
+            for(var size : sizes){
+                String[] options = new String[variations.length];
+                for(var i = 0; i < options.length; i++){
+                    options[i] = variations[i] + name + "-" + size + ".png";
+                }
+                System.out.println();
+                System.out.println(name + "-" + size + "-");
+                for(var filename : options){
+                    System.out.println(filename);
+                }
+                Processor p = new Processor("./out/" + options[0]);
+                p.canvasWidth *= 2;
+                p.addLayer("./out/" + options[1]);
+                p.currentLayer().dx = p.currentLayer().image.getWidth();
+                p.saveLayers(new int[]{0,1}, "./temp/" + options[0]);
+                //System.out.println(options);
+            }
+        }
     }
 
     public void colorReduce() {
         System.out.println("Color Reduction");
         colorReduce("horse", "png");
-        // colorReduce("mars-moon-phobos", "jpg");
-        // colorReduce("rotovirus", "jpg");
-        // colorReduce("square", "png");
+        colorReduce("mars-moon-phobos", "jpg");
+        colorReduce("rotovirus", "jpg");
+        colorReduce("square", "png");
     }
 
     public void colorReduceRandom() {
         System.out.println("Color Reduction Random");
         colorReduceRandom("horse", "png");
-        // colorReduce("mars-moon-phobos", "jpg");
-        // colorReduce("rotovirus", "jpg");
-        // colorReduce("square", "png");
+        colorReduceRandom("mars-moon-phobos", "jpg");
+        colorReduceRandom("rotovirus", "jpg");
+        colorReduceRandom("square", "png");
     }
 
     //Do a color reduction using KNN

@@ -17,6 +17,7 @@ import java.awt.Color;
 public class Layer {
 
   BufferedImage image;
+ 
 
   public Layer(String filename) {
     try {
@@ -448,11 +449,11 @@ public class Layer {
     return new Color(image.getRGB(x, y));
   }
 
-  private int getHeight() {
+  public int getHeight() {
     return image.getHeight();
   }
 
-  private int getWidth() {
+  public int getWidth() {
     return image.getWidth();
   }
 
